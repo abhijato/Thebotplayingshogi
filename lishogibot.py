@@ -3,10 +3,9 @@ import shogi
 import engine_wrapper
 import model
 import json
-import lichess
+import lishogi
 import logging
 import multiprocessing
-from multiprocessing import Process
 import traceback
 import logging_pool
 import signal
@@ -19,9 +18,9 @@ from conversation import Conversation, ChatLine
 from functools import partial
 from requests.exceptions import ChunkedEncodingError, ConnectionError, HTTPError, ReadTimeout
 from urllib3.exceptions import ProtocolError
-import os
-import threading
-from util import makeusi
+from ColorLogger import enable_color_logging
+from util import *
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +52,6 @@ def upgrade_account(li):
     return True
 
 def watch_control_stream(control_queue, li):
-    logger.info("start")
     while not terminated:
         try:
             response = li.get_event_stream()
@@ -62,49 +60,68 @@ def watch_control_stream(control_queue, li):
                 if line:
                     event = json.loads(line.decode('utf-8'))
                     control_queue.put_nowait(event)
-                    logger.info(event)
+                else:
+                    control_queue.put_nowait({"type": "ping"})
         except:
-            logger.info("except")
             pass
 
 def start(li, user_profile, engine_factory, config):
     challenge_config = config["challenge"]
     max_games = challenge_config.get("concurrency", 1)
     logger.info("You're now connected to {} and awaiting challenges.".format(config["url"]))
-    control_queue=multiprocessing.Manager().Queue()
-    control_stream = Process(target=watch_control_stream, args=[control_queue,li])
+    manager = multiprocessing.Manager()
+    challenge_queue = manager.list()
+    control_queue = manager.Queue()
+    control_stream = multiprocessing.Process(target=watch_control_stream, args=[control_queue, li])
     control_stream.start()
-    gamesip=[]
-    while not terminated:
-        event=control_queue.get()
-        if event["type"] == "terminated":
-            break
-        elif event["type"] == "challenge":
-            logger.info("chlng detected")
-            chlng = model.Challenge(event["challenge"])
-            if chlng.is_supported(challenge_config):
-                logger.info("chlng supported")
+    busy_processes = 0
+    queued_processes = 0
+
+    with logging_pool.LoggingPool(max_games+1) as pool:
+        while not terminated:
+            event = control_queue.get()
+            if event["type"] == "terminated":
+                break
+            elif event["type"] == "local_game_done":
+                busy_processes -= 1
+                logger.info("+++ Process Free. Total Queued: {}. Total Used: {}".format(queued_processes, busy_processes))
+            elif event["type"] == "challenge":
+                chlng = model.Challenge(event["challenge"])
+                if chlng.is_supported(challenge_config):
+                    challenge_queue.append(chlng)
+                    if (challenge_config.get("sort_by", "best") == "best"):
+                        list_c = list(challenge_queue)
+                        list_c.sort(key=lambda c: -c.score())
+                        challenge_queue = list_c
+                else:
+                    try:
+                        li.decline_challenge(chlng.id)
+                        logger.info("    Decline {}".format(chlng))
+                    except:
+                        pass
+            elif event["type"] == "gameStart":
+                if queued_processes <= 0:
+                    logger.debug("Something went wrong. Game is starting and we don't have a queued process")
+                else:
+                    queued_processes -= 1
+                busy_processes += 1
+                logger.info("--- Process Used. Total Queued: {}. Total Used: {}".format(queued_processes, busy_processes))
+                game_id = event["game"]["id"]
+                pool.apply_async(play_game, [li, game_id, control_queue, engine_factory, user_profile, config, challenge_queue])
+            while ((queued_processes + busy_processes) < max_games and challenge_queue): # keep processing the queue until empty or max_games is reached
+                chlng = challenge_queue.pop(0)
                 try:
                     logger.info("    Accept {}".format(chlng))
+                    queued_processes += 1
                     response = li.accept_challenge(chlng.id)
-                    ppp={"type":"gameStart", "game":{"id":chlng.id}}
-                    control_queue.put_nowait(ppp)
-                    logger.info(chlng.id)
+                    logger.info("--- Process Queue. Total Queued: {}. Total Used: {}".format(queued_processes, busy_processes))
                 except (HTTPError, ReadTimeout) as exception:
                     if isinstance(exception, HTTPError) and exception.response.status_code == 404: # ignore missing challenge
                         logger.info("    Skip missing {}".format(chlng))
-            else:
-                try:
-                    li.decline_challenge(chlng.id)
-                    logger.info("    Decline {}".format(chlng))
-                except:
-                    pass
-        elif event["type"] == "gameStart":
-            logger.info("game detected")
-            game_id = event["game"]["id"]
-            gamesip.append(threading.Thread(target=play_game,args=(li, game_id, engine_factory, user_profile, config,)))
-            gamesip[-1].start()
-            
+                    queued_processes -= 1
+
+            control_queue.task_done()
+                    
     logger.info("Terminated")
     control_stream.terminate()
     control_stream.join()
@@ -112,58 +129,123 @@ def start(li, user_profile, engine_factory, config):
 ponder_results = {}
 
 @backoff.on_exception(backoff.expo, BaseException, max_time=600, giveup=is_final)
-def play_game(li, game_id, engine_factory, user_profile, config):
+def play_game(li, game_id, control_queue, engine_factory, user_profile, config, challenge_queue):
     response = li.get_game_stream(game_id)
     lines = response.iter_lines()
-    bullet=False
+
     #Initial response of stream will be the full game info. Store it
     initial_state = json.loads(next(lines).decode('utf-8'))
     game = model.Game(initial_state, user_profile["username"], li.baseUrl, config.get("abort_time", 20))
-    timelim=game.state["btime"]/1000
-    timelim=timelim/60
-    if timelim>=0.5 and timelim<=2:
-        bullet=True
-    time=round(timelim/150*60,1)
-    if time>6:
-        time=6
-    elif time<0.3:
-        time=0.3
-    if bullet:
-        time=0.2
     board = setup_board(game)
-    cfg = config["engine"]
-    
-    engineeng = engine_factory(board)
+    engine = engine_factory(board)
+    engine.get_opponent_info(game)
+    conversation = Conversation(game, engine, li, __version__, challenge_queue)
 
     logger.info("+++ {}".format(game))
 
-    if is_engine_move(game,board.move_stack) and not is_game_over(game):
-        move=engineeng.search(board,5000,5000,1,1)
-        chars=list(move)
-        updchars=[chars[1],chars[0],chars[3],chars[2]]
-        finalmove=''
-        finalmove=finalmove.join(updchars)
-        li.make_move(game.id, finalmove)
+    engine_cfg = config["engine"]
+    is_usi = engine_cfg["protocol"] == "usi"
+    is_usi_ponder = is_usi and engine_cfg.get("ponder", False)
+    move_overhead = config.get("move_overhead", 1000)
+    polyglot_cfg = engine_cfg.get("polyglot", {})
+    book_cfg = polyglot_cfg.get("book", {})
+
+    ponder_thread = None
+    deferredFirstMove = False
+
+    ponder_usi = None
+    def ponder_thread_func(game, engine, board, wtime, btime, winc, binc):
+        global ponder_results        
+        best_move , ponder_move = engine.search_with_ponder(board, wtime, btime, winc, binc, True)
+        ponder_results[game.id] = ( best_move , ponder_move )
+
+    engine.set_time_control(game)
+
+    if len(board.move_stack) < 2:
+        while not terminated:
+            try:
+                if not play_first_move(game, engine, board, li):
+                    deferredFirstMove = True
+                break
+            except (HTTPError) as exception:
+                if exception.response.status_code == 400: # fallthrough
+                    break
+    else:
+        moves = game.state["moves"].split()
+        if not is_game_over(game) and is_engine_move(game, moves):
+            best_move = None
+            ponder_move = None
+            wtime = game.state["wtime"]
+            btime = game.state["btime"]
+            if board.turn == shogi.BLACK:
+                wtime = max(0, wtime - move_overhead)
+            else:
+                btime = max(0, btime - move_overhead)
+            logger.info("Searching for wtime {} btime {}".format(wtime, btime))
+            best_move , ponder_move = engine.search_with_ponder(board, wtime, btime, game.state["winc"], game.state["binc"])
+            engine.print_stats()
+
+            if is_usi_ponder and not ( ponder_move is None ):
+                ponder_board = copy.deepcopy(board)
+                ponder_board.push(shogi.Move.from_usi(best_move))
+                ponder_board.push(shogi.Move.from_usi(ponder_move))
+                ponder_usi = ponder_move
+                logger.info("Pondering for wtime {} btime {}".format(wtime, btime))
+                ponder_thread = threading.Thread(target = ponder_thread_func, args = (game, engine, ponder_board, wtime, btime, game.state["winc"], game.state["binc"]))
+                ponder_thread.start()
+            li.make_move(game.id, best_move)
+
     while not terminated:
         try:
             binary_chunk = next(lines)
         except(StopIteration):
             break
-        upd = json.loads(binary_chunk.decode('utf-8')) if binary_chunk else None
-        u_type = upd["type"] if upd else "ping"
-        if not board.is_game_over():
-            if u_type == "gameState":
-                game.state=upd
+        try:
+            upd = json.loads(binary_chunk.decode('utf-8')) if binary_chunk else None
+            u_type = upd["type"] if upd else "ping"
+            if u_type == "chatLine":
+                conversation.react(ChatLine(upd), game)
+            elif u_type == "gameState":
+                game.state = upd
                 moves = upd["moves"].split()
-                board = update_board(board, moves[-1])
+                if len(moves) > 0 and len(moves) != len(board.move_stack):
+                    board = update_board(board, moves[-1])
                 if not is_game_over(game) and is_engine_move(game, moves):
-                    move=engineeng.search(board,upd['wtime'],upd['btime'],upd['winc'],upd['binc'])
-                    chars=list(move)
-                    updchars=[chars[1],chars[0],chars[3],chars[2]]
-                    finalmove=''
-                    finalmove.join(updchars)
-                    li.make_move(game.id, finalmove)
-                if board.turn == shogi.WHITE:
+                    if config.get("fake_think_time") and len(moves) > 9:
+                        delay = min(game.clock_initial, game.my_remaining_seconds()) * 0.015
+                        accel = 1 - max(0, min(100, len(moves) - 20)) / 150
+                        sleep = min(5, delay * accel)
+                        time.sleep(sleep)
+
+                    best_move = None
+                    ponder_move = None
+
+                    wtime = upd["wtime"]
+                    btime = upd["btime"]
+                    if board.turn == shogi.BLACK:
+                        wtime = max(0, wtime - move_overhead)
+                    else:
+                        btime = max(0, btime - move_overhead)
+
+                    if not deferredFirstMove:
+                        if best_move == None:
+                            logger.info("Searching for wtime {} btime {}".format(wtime, btime))
+                            best_move , ponder_move = engine.search_with_ponder(board, wtime, btime, upd["winc"], upd["binc"])
+                            engine.print_stats()
+
+                        if is_usi_ponder and not ( ponder_move is None ):
+                            ponder_board = copy.deepcopy(board)
+                            ponder_board.push(shogi.Move.from_usi(best_move))
+                            ponder_board.push(shogi.Move.from_usi(ponder_move))
+                            ponder_usi = ponder_move
+                            logger.info("Pondering for wtime {} btime {}".format(wtime, btime))
+                            ponder_thread = threading.Thread(target = ponder_thread_func, args = (game, engine, ponder_board, wtime, btime, upd["winc"], upd["binc"]))
+                            ponder_thread.start()
+                        li.make_move(game.id, best_move)
+                    else:
+                        play_first_move(game, engine, board, li)
+                        deferredFirstMove = False
+                if board.turn == shogi.BLACK:
                     game.ping(config.get("abort_time", 20), (upd["wtime"] + upd["winc"]) / 1000 + 60)
                 else:
                     game.ping(config.get("abort_time", 20), (upd["btime"] + upd["binc"]) / 1000 + 60)
@@ -177,13 +259,40 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                     if game.is_abortable():
                         li.abort(game.id)
                     break
-        else:
-            logger.info("game over")
-            engineeng.quit()
-            break
+        except (HTTPError, ReadTimeout, RemoteDisconnected, ChunkedEncodingError, ConnectionError, ProtocolError) as e:
+            if game.id in (ongoing_game["gameId"] for ongoing_game in li.get_ongoing_games()):
+                continue
+            else:
+                break
 
-def is_white_to_move(game, moves):
-    return len(moves) % 2 == (0 if game.white_starts else 1)
+    logger.info("--- {} Game over".format(game.url()))
+    engine.stop()
+    if not ( ponder_thread is None ):
+        ponder_thread.join()
+        ponder_thread = None
+
+    # This can raise queue.NoFull, but that should only happen if we're not processing
+    # events fast enough and in this case I believe the exception should be raised
+    control_queue.put_nowait({"type": "local_game_done"})
+
+
+def play_first_move(game, engine, board, li):
+    moves = game.state["moves"].split()
+    if is_engine_move(game, moves):
+        # need to hardcode first movetime since Lishogi has 30 sec limit.
+        best_move = engine.first_search(board, 1000)
+        engine.print_stats()
+        li.make_move(game.id, best_move)
+        return True
+    return False
+
+
+def play_first_book_move(game, engine, board, li, config):
+    pass
+
+
+def get_book_move(board, config):
+    pass
 
 
 def setup_board(game):
@@ -196,6 +305,10 @@ def setup_board(game):
         board = update_board(board, move)
 
     return board
+
+
+def is_white_to_move(game, moves):
+    return len(moves) % 2 == (0 if game.white_starts else 1)
 
 
 def is_engine_move(game, moves):
@@ -216,15 +329,15 @@ def update_board(board, move):
 
 def intro():
     return r"""
-    .   _/|
-    .  // o\
-    .  || ._)  lichess-bot %s
-    .  //__\
-    .  )___(   Play on Lichess with a bot
+    .   _/\_
+    .  //o o\\
+    .  ||    ||  lishogi-bot %s
+    .  ||    ||
+    .  ||____||  Play on Lishogi with a bot
     """ % __version__
 
-if __name__=="__main__":
-    parser = argparse.ArgumentParser(description='Play on Lichess with a bot')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Play on Lishogi with a bot')
     parser.add_argument('-u', action='store_true', help='Add this flag to upgrade your account to a bot account.')
     parser.add_argument('-v', action='store_true', help='Verbose output. Changes log level from INFO to DEBUG.')
     parser.add_argument('--config', help='Specify a configuration file (defaults to ./config.yml)')
@@ -233,16 +346,17 @@ if __name__=="__main__":
 
     logging.basicConfig(level=logging.DEBUG if args.v else logging.INFO, filename=args.logfile,
                         format="%(asctime)-15s: %(message)s")
+    enable_color_logging(debug_lvl=logging.DEBUG if args.v else logging.INFO)
     logger.info(intro())
     CONFIG = load_config(args.config or "./config.yml")
-    li = lichess.Lichess(CONFIG["token"], CONFIG["url"], __version__)
+    li = lishogi.Lishogi(CONFIG["token"], CONFIG["url"], __version__)
 
     user_profile = li.get_profile()
     username = user_profile["username"]
     is_bot = user_profile.get("title") == "BOT"
     logger.info("Welcome {}!".format(username))
 
-    if is_bot is False:
+    if args.u is True and is_bot is False:
         is_bot = upgrade_account(li)
 
     if is_bot:
@@ -250,3 +364,4 @@ if __name__=="__main__":
         start(li, user_profile, engine_factory, CONFIG)
     else:
         logger.error("{} is not a bot account. Please upgrade it to a bot account!".format(user_profile["username"]))
+        
