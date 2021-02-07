@@ -24,7 +24,7 @@ class Conversation:
         elif cmd == "engine":
             self.send_reply(line, "Fairy Stockfish 11.2")
         elif cmd == "howto":
-            self.send_reply(line, "How to run your own bot: https://github.com/TheYoBots/Lishogi-Bot")
+            self.send_reply(line, "How to run your own bot: https://github.com/abhijato/Thebotplayingshogi")
         elif cmd == "eval" and line.room == "spectator":
             stats = self.engine.get_stats()
             self.send_reply(line, ", ".join(stats))
