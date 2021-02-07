@@ -2,6 +2,7 @@ import yaml
 import os
 import os.path
 
+
 def load_config(config_file):
     with open(config_file) as stream:
         try:
@@ -30,7 +31,7 @@ def load_config(config_file):
                 raise Exception("´engine´ subsection {}".format(subsection[2]))
 
         if CONFIG["token"] == "xxxxxxxxxxxxxxxx":
-            raise Exception("Your config.yml has the default Lichess API token. This is probably wrong.")
+            raise Exception("Your config.yml has the default Lishogi API token. This is probably wrong.")
 
         if not os.path.isdir(CONFIG["engine"]["dir"]):
             raise Exception("Your engine directory `{}` is not a directory.")
