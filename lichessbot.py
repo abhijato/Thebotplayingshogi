@@ -137,7 +137,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
     logger.info("+++ {}".format(game))
 
     if is_engine_move(game,board.move_stack) and not is_game_over(game):
-        move=engine.search(board,1000,1000,1,1)
+        move=engineeng.search(board,1000,1000,1,1)
         li.make_move(game.id, move)
     while not terminated:
         try:
@@ -152,7 +152,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                 moves = upd["moves"].split()
                 board = update_board(board, moves[-1])
                 if not is_game_over(game) and is_engine_move(game, moves):
-                    move=engine.search(board,upd['wtime'],upd['btime'],upd['winc'],upd['binc'])
+                    move=engineeng.search(board,upd['wtime'],upd['btime'],upd['winc'],upd['binc'])
                     li.make_move(game.id, move)
                 if board.turn == shogi.WHITE:
                     game.ping(config.get("abort_time", 20), (upd["wtime"] + upd["winc"]) / 1000 + 60)
