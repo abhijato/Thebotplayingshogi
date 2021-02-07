@@ -141,7 +141,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
         move=engineeng.search(board,5000,5000,1,1)
         chars=list(move)
         alphas=['a','b','c','d','e','f','g','h','i']
-        updchars=[alphas[9-int(chars[0])],alphas.index(chars[1])+1,alphas[9-int(chars[2])],alphas.index(chars[3])+1]
+        updchars=[alphas[9-int(chars[0])],str(alphas.index(chars[1])+1),alphas[9-int(chars[2])],str(alphas.index(chars[3])+1)]
         finalmove=''
         finalmove=finalmove.join(updchars)
         li.make_move(game.id, finalmove)
@@ -160,7 +160,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                 if not is_game_over(game) and is_engine_move(game, moves):
                     move=engineeng.search(board,upd['wtime'],upd['btime'],upd['winc'],upd['binc'])
                     chars=list(move)
-                    updchars=[alphas[9-int(chars[0])],alphas.index(chars[1])+1,alphas[9-int(chars[2])],alphas.index(chars[3])+1]
+                    updchars=[alphas[9-int(chars[0])],str(alphas.index(chars[1])+1),alphas[9-int(chars[2])],str(alphas.index(chars[3])+1)]
                     finalmove=''
                     finalmove.join(updchars)
                     li.make_move(game.id, finalmove)
