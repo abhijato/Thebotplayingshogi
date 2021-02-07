@@ -139,7 +139,11 @@ def play_game(li, game_id, engine_factory, user_profile, config):
 
     if is_engine_move(game,board.move_stack) and not is_game_over(game):
         move=engineeng.search(board,5000,5000,1,1)
-        li.make_move(game.id, move)
+        chars=list(move)
+        updchars=[chars[2],chars[1],chars[4],chars[3]]
+        finalmove=''
+        finalmove.join(updchars)
+        li.make_move(game.id, finalmove)
     while not terminated:
         try:
             binary_chunk = next(lines)
@@ -154,7 +158,11 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                 board = update_board(board, moves[-1])
                 if not is_game_over(game) and is_engine_move(game, moves):
                     move=engineeng.search(board,upd['wtime'],upd['btime'],upd['winc'],upd['binc'])
-                    li.make_move(game.id, move)
+                    chars=list(move)
+                    updchars=[chars[2],chars[1],chars[4],chars[3]]
+                    finalmove=''
+                    finalmove.join(updchars)
+                    li.make_move(game.id, finalmove)
                 if board.turn == shogi.WHITE:
                     game.ping(config.get("abort_time", 20), (upd["wtime"] + upd["winc"]) / 1000 + 60)
                 else:
