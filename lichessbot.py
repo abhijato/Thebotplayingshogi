@@ -196,11 +196,11 @@ def is_game_over(game):
 
 
 def update_board(board, move):
-    usi_move = shogi.Move.from_usi(makeusi(move))
+    usi_move = shogi.Move.from_usi(move)
     if board.is_legal(usi_move):
         board.push(usi_move)
     else:
-        logger.debug('Ignoring illegal move {} on board {}'.format(makeusi(move), board.sfen()))
+        logger.debug('Ignoring illegal move {} on board {}'.format(move, board.sfen()))
     return board
 
 def intro():
