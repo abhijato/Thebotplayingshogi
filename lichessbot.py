@@ -138,7 +138,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
     logger.info("+++ {}".format(game))
 
     if is_engine_move(game,board.move_stack) and not is_game_over(game):
-        move=engineeng.search(board,1000,1000,1,1)
+        move=engineeng.search(board,5000,5000,1,1)
         li.make_move(game.id, move)
     while not terminated:
         try:
