@@ -213,4 +213,4 @@ class Engine:
                     if upperbound:
                         info["score"]["upperbound"] = upperbound
             else:
-                print("Unexpected engine response to go: %s %s" % (command, arg))
+                print("Unexpected engine response to go: %s %s" % (command, arg))          
