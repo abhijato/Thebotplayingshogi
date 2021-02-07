@@ -142,7 +142,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
         chars=list(move)
         updchars=[chars[1],chars[0],chars[3],chars[2]]
         finalmove=''
-        finalmove.join(updchars)
+        finalmove=finalmove.join(updchars)
         li.make_move(game.id, finalmove)
     while not terminated:
         try:
