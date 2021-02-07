@@ -21,6 +21,7 @@ from requests.exceptions import ChunkedEncodingError, ConnectionError, HTTPError
 from urllib3.exceptions import ProtocolError
 import os
 import threading
+from util import makeusi
 
 logger = logging.getLogger(__name__)
 
@@ -198,11 +199,11 @@ def is_game_over(game):
 
 
 def update_board(board, move):
-    usi_move = shogi.Move.from_usi(move)
+    usi_move = shogi.Move.from_usi(makeusi(move))
     if board.is_legal(usi_move):
         board.push(usi_move)
     else:
-        logger.debug('Ignoring illegal move {} on board {}'.format(move, board.sfen()))
+        logger.debug('Ignoring illegal move {} on board {}'.format(makeusi(move), board.sfen()))
     return board
 
 def intro():
