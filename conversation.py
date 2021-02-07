@@ -1,6 +1,4 @@
-from time import time
-
-class Conversation():
+class Conversation:
     def __init__(self, game, engine, xhr, version, challenge_queue):
         self.game = game
         self.engine = engine
@@ -14,18 +12,19 @@ class Conversation():
         print("*** {} [{}] {}: {}".format(self.game.url(), line.room, line.username, line.text.encode("utf-8")))
         if (line.text[0] == self.command_prefix):
             self.command(line, game, line.text[1:].lower())
-        pass
 
     def command(self, line, game, cmd):
         if cmd == "commands" or cmd == "help":
-            self.send_reply(line, "Supported commands: !name, !howto, !eval, !queue")
+            self.send_reply(line, "Supported commands: !name, !engine, !wait, !howto, !eval, !queue")
         elif cmd == "wait" and game.is_abortable():
             game.ping(60, 120)
             self.send_reply(line, "Waiting 60 seconds...")
         elif cmd == "name":
-            self.send_reply(line, "{} (lichess-bot v{})".format(self.engine.name(), self.version))
+            self.send_reply(line, "{} (lishogi-bot v{})".format(self.engine.name(), self.version))
+        elif cmd == "engine":
+            self.send_reply(line, "Fairy Stockfish 11.2")
         elif cmd == "howto":
-            self.send_reply(line, "How to run your own bot: lichess.org/api#tag/Chess-Bot")
+            self.send_reply(line, "How to run your own bot: https://github.com/TheYoBots/Lishogi-Bot")
         elif cmd == "eval" and line.room == "spectator":
             stats = self.engine.get_stats()
             self.send_reply(line, ", ".join(stats))
@@ -42,7 +41,7 @@ class Conversation():
         self.xhr.chat(self.game.id, line.room, reply)
 
 
-class ChatLine():
+class ChatLine:
     def __init__(self, json):
         self.room = json.get("room")
         self.username = json.get("username")
