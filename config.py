@@ -36,7 +36,7 @@ def load_config(config_file):
         if not os.path.isdir(CONFIG["engine"]["dir"]):
             raise Exception("Your engine directory `{}` is not a directory.")
 
-        engine = os.path.join(CONFIG["engine"]["dir"], CONFIG["engine"]["fairyname"])
+        engine = os.path.join(CONFIG["engine"]["dir"], CONFIG["engine"]["name"])
 
         if not os.path.isfile(engine):
             raise Exception("The engine %s file does not exist." % engine)
