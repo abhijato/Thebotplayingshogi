@@ -87,8 +87,6 @@ def start(li, user_profile, engine_factory, config):
                 try:
                     logger.info("    Accept {}".format(chlng))
                     response = li.accept_challenge(chlng.id)
-                    ppp={"type":"gameStart", "game":{"id":chlng.id}}
-                    control_queue.put_nowait(ppp)
                     logger.info(chlng.id)
                 except (HTTPError, ReadTimeout) as exception:
                     if isinstance(exception, HTTPError) and exception.response.status_code == 404: # ignore missing challenge
@@ -164,10 +162,10 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                     finalmove=''
                     finalmove.join(updchars)
                     li.make_move(game.id, finalmove)
-                if board.turn == shogi.WHITE:
-                    game.ping(config.get("abort_time", 20), (upd["wtime"] + upd["winc"]) / 1000 + 60)
-                else:
+                if board.turn == shogi.BLACK:
                     game.ping(config.get("abort_time", 20), (upd["btime"] + upd["binc"]) / 1000 + 60)
+                else:
+                    game.ping(config.get("abort_time", 20), (upd["wtime"] + upd["winc"]) / 1000 + 60)
             elif u_type == "ping":
                 if game.should_abort_now():
                     logger.info("    Aborting {} by lack of activity".format(game.url()))
