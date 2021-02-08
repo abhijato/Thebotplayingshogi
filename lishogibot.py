@@ -142,7 +142,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
         updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
         finalmove=''
         finalmove=finalmove.join(updchars)
-        board.push(shogi.Move.from_usi(finalmove))
+        board.push(shogi.Move.from_usi(move))
         li.make_move(game.id, finalmove)
     while not terminated:
         try:
@@ -163,7 +163,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                     updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
                     finalmove=''
                     finalmove=finalmove.join(updchars)
-                    board.push(shogi.Move.from_usi(finalmove))
+                    board.push(shogi.Move.from_usi(move))
                     li.make_move(game.id, finalmove)
                 if board.turn == shogi.BLACK:
                     game.ping(config.get("abort_time", 20), (upd["btime"] + upd["binc"]) / 1000 + 60)
