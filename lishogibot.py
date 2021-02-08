@@ -158,6 +158,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                 if not is_game_over(game) and is_engine_move(game, moves):
                     move=engineeng.search(board,upd['wtime'],upd['btime'],upd['winc'],upd['binc'])
                     chars=list(move)
+                    alphas=['a','b','c','d','e','f','g','h','i']
                     updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
                     finalmove=''
                     finalmove.join(updchars)
