@@ -26,8 +26,8 @@ ENDPOINTS = {
     "resign": "/api/bot/game/{}/resign"
 }
 
-# docs: https://lichess.org/api
-class Lichess():
+# docs: https://lichess.org/api (used by lishogi)
+class Lishogi():
 
     def __init__(self, token, url, version):
         self.version = version
@@ -107,5 +107,5 @@ class Lichess():
         self.api_post(ENDPOINTS["resign"].format(game_id))
 
     def set_user_agent(self, username):
-        self.header.update({"User-Agent": "lichess-bot/{} user:{}".format(self.version, username)})
+        self.header.update({"User-Agent": "lishogi-bot/{} user:{}".format(self.version, username)})
         self.session.headers.update(self.header)
