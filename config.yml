@@ -53,7 +53,7 @@ challenge:                   # incoming challenges
   accept_bot: true          # accepts challenges coming from other bots
   max_increment: 180         # maximum amount of increment to accaept a challenge. the max is 180. set to 0 for no increment
   min_increment: 0           # minimum amount of increment to accept a challenge
-  variants:                  # chess variants to accept (http://lichess.org/variant)
+  variants:                  # shogi variants to accept
     - standard
     - fromPosition
   time_controls:             # time controls to accept
