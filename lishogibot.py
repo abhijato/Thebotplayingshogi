@@ -3,7 +3,7 @@ import shogi
 import engine_wrapper
 import model
 import json
-import lichess
+import lishogi
 import logging
 import multiprocessing
 from multiprocessing import Process
@@ -31,7 +31,7 @@ try:
 except ImportError:
     from http.client import BadStatusLine as RemoteDisconnected
 
-__version__ = "1.1.5"
+__version__ = "0.6.0"
 
 terminated = False
 
@@ -215,15 +215,15 @@ def update_board(board, move):
 
 def intro():
     return r"""
-    .   _/|
-    .  // o\
-    .  || ._)  lichess-bot %s
-    .  //__\
-    .  )___(   Play on Lichess with a bot
+    .   _/\_
+    .  //o o\\
+    .  ||    ||  lishogi-bot %s
+    .  ||    ||
+    .  ||____||  Play on Lishogi with a bot
     """ % __version__
 
 if __name__=="__main__":
-    parser = argparse.ArgumentParser(description='Play on Lichess with a bot')
+    parser = argparse.ArgumentParser(description='Play on Lishogi with a bot')
     parser.add_argument('-u', action='store_true', help='Add this flag to upgrade your account to a bot account.')
     parser.add_argument('-v', action='store_true', help='Verbose output. Changes log level from INFO to DEBUG.')
     parser.add_argument('--config', help='Specify a configuration file (defaults to ./config.yml)')
