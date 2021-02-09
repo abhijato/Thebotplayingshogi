@@ -142,7 +142,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
         if '+' in chars:
             updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1)),'+']
         elif '*' in chars:
-            updchars=[alpha[0],alpha[1],alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
+            updchars=[alphas[0],alphas[1],alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
         else:
             updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
         finalmove=''
@@ -168,7 +168,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                     if '+' in chars:
                         updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1)),'+']
                     elif '*' in chars:
-                        updchars=[alpha[0],alpha[1],alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
+                        updchars=[alphas[0],alphas[1],alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
                     else:
                         updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
                     finalmove=''
