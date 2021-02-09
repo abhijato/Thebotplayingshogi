@@ -109,7 +109,6 @@ class Engine:
 
     def go(self, position, moves, movetime=None, wtime=None, btime=None, winc=None, binc=None, byo=None, depth=None, nodes=None):
         self.send("position sfen %s moves %s" % (position, " ".join(moves)))
-        print("position sfen %s moves %s" % (position, " ".join(moves)))
 
         builder = []
         builder.append("go")
@@ -142,7 +141,6 @@ class Engine:
             builder.append(str(binc * 1000))
 
         self.send(" ".join(builder))
-        print(" ".join(builder))
 
         info = {}
         info["bestmove"] = None
