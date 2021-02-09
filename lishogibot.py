@@ -22,6 +22,7 @@ from urllib3.exceptions import ProtocolError
 import os
 import threading
 from util import makeusi
+from util import switchusiuci
 
 logger = logging.getLogger(__name__)
 
@@ -137,16 +138,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
 
     if is_engine_move(game,board.move_stack) and not is_game_over(game):
         move=engineeng.search(board,5000,5000,1,1)
-        chars=list(move)
-        alphas=['a','b','c','d','e','f','g','h','i']
-        if '+' in chars:
-            updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1)),'+']
-        elif '*' in chars:
-            updchars=[alphas[0],alphas[1],alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
-        else:
-            updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
-        finalmove=''
-        finalmove=finalmove.join(updchars)
+        finalmove=switchusiuci(move)
         board.push(shogi.Move.from_usi(move))
         li.make_move(game.id, finalmove)
     while not terminated:
@@ -163,16 +155,7 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                 board = update_board(board, moves[-1])
                 if not is_game_over(game) and is_engine_move(game, moves):
                     move=engineeng.search(board,upd['wtime'],upd['btime'],upd['winc'],upd['binc'])
-                    chars=list(move)
-                    alphas=['a','b','c','d','e','f','g','h','i']
-                    if '+' in chars:
-                        updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1)),'+']
-                    elif '*' in chars:
-                        updchars=[alphas[0],alphas[1],alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
-                    else:
-                        updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
-                    finalmove=''
-                    finalmove=finalmove.join(updchars)
+                    finalmove=switchusiuci(move)
                     board.push(shogi.Move.from_usi(move))
                     li.make_move(game.id, finalmove)
                 if board.turn == shogi.BLACK:
