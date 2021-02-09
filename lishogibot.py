@@ -139,7 +139,12 @@ def play_game(li, game_id, engine_factory, user_profile, config):
         move=engineeng.search(board,5000,5000,1,1)
         chars=list(move)
         alphas=['a','b','c','d','e','f','g','h','i']
-        updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
+        if '+' in chars:
+            updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1)),'+']
+        elif '*' in chars:
+            updchars=[alpha[0],alpha[1],alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
+        else:
+            updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
         finalmove=''
         finalmove=finalmove.join(updchars)
         board.push(shogi.Move.from_usi(move))
@@ -160,7 +165,12 @@ def play_game(li, game_id, engine_factory, user_profile, config):
                     move=engineeng.search(board,upd['wtime'],upd['btime'],upd['winc'],upd['binc'])
                     chars=list(move)
                     alphas=['a','b','c','d','e','f','g','h','i']
-                    updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
+                    if '+' in chars:
+                        updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1)),'+']
+                    elif '*' in chars:
+                        updchars=[alpha[0],alpha[1],alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
+                    else:
+                        updchars=[alphas[9-int(chars[0])],str(10-(alphas.index(chars[1])+1)),alphas[9-int(chars[2])],str(10-(alphas.index(chars[3])+1))]
                     finalmove=''
                     finalmove=finalmove.join(updchars)
                     board.push(shogi.Move.from_usi(move))
