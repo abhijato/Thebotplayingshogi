@@ -24,4 +24,6 @@ Engine communication code taken from https://github.com/TheYoBots/Lishogi-Bot by
 - Go to the 'Deploy' tab and click 'Connect to GitHub'.
 - Click on 'search' and then select your fork of this repository.
 - Then 'Enable Automatic Deploys' and then select the 'master' branch (which is already done by default) and Click 'Deploy'.
-- Once it has been deployed, go to 'Resources' tab on heroku and enable 'worker' (bash startbot.sh) dynos.
+- Once it has been deployed, go to 'Resources' tab on heroku and enable 'worker' (bash startbot.sh) dynos. (do note that if you don't see any dynos in the 'Resources' tab, then you must refresh your heroku page.)
+- You're now connected to lishogi and awaiting challenges! Your bot is up and ready!
+
