@@ -4,6 +4,10 @@ This is the code of [@TheB0t-PlAyInG-sH0gI](https://lishogi.org/@/TheB0t-PlAyInG
 
 Engine communication code taken from https://github.com/TheYoBots/Lishogi-Bot by [TheYoBots](https://github.com/TheYoBots)
 
+### Engine
+
+- Fairy Stockfish 11.2 POPCNT
+
 ### Buildpack
 
 - heroku/python
