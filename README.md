@@ -4,15 +4,15 @@ This is the code of [@TheB0t-PlAyInG-sH0gI](https://lishogi.org/@/TheB0t-PlAyInG
 
 Engine communication code taken from https://github.com/TheYoBots/Lishogi-Bot by [TheYoBots](https://github.com/TheYoBots)
 
-### Engine
+### Shogi Engine
 
 - Fairy Stockfish 11.2 POPCNT
 
-### Buildpack
+### Heroku Buildpack
 
 - heroku/python
 
-### Stack
+### Heroku Stack
 
 - heroku-20 (allowing a maximum hash size of 256 mb)
 
