@@ -16,7 +16,7 @@ Engine communication code taken from https://github.com/TheYoBots/Lishogi-Bot by
 
 ### Heroku Stack
 
-- heroku-20 (allowing a maximum hash size of 256 mb)
+- heroku-20 (allowing a maximum hash size of 512 mb)
 
 ### How to Use
 
