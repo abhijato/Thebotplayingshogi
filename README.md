@@ -1,3 +1,5 @@
+# **Not Maintained Anymore. Do checkout https://github.com/TheYoBots/Lishogi-Bot or https://github.com/The-bot-makers/Lishogi-Bot which maintained.**
+
 # The Bot Playing Shogi
 
 The code template to make a Lishogi Bot and deploy it to heroku server easily.
